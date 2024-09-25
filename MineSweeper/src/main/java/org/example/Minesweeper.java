@@ -10,7 +10,10 @@ public class Minesweeper {
     private int rows; // Number of rows in the board
     private int cols; // Number of columns in the board
     private int numMines; // Number of mines in the game
+    private int turnNum;
     private boolean gameOver; // Boolean to check if the game is over
+
+
 
     // Constructor to initialize the board with the specified dimensions and number of mines
     public Minesweeper(int rows, int cols, int numMines) {
@@ -22,6 +25,7 @@ public class Minesweeper {
         this.revealed = new boolean[rows][cols];
         this.gameOver = false;
         this.calcNumbers = new int[rows][cols];
+        this.turnNum = 0;
 
         // Call methods to initialize the board and place mines
     }
@@ -35,7 +39,7 @@ public class Minesweeper {
     }
     // Method to initialize the game board with empty values
     //make private once done
-    public void initializeBoard() {
+    private void initializeBoard() {
         // TODO: Implement this method
         int r = getRows();
         int c = getCols();
@@ -44,12 +48,14 @@ public class Minesweeper {
             for(int j = 0; j < c; j++){
                 gameboard[i][j] = '*';
                 setBoard(gameboard);
-                System.out.print(getBoard(i,j));
-
             }
-            System.out.println();
         }
-        placeMines();
+        for(int i = 0; i < getRows();i++){
+            for(int j = 0; j < getCols(); j++){
+                revealed[i][j] = false;
+            }
+        }
+
 
 
     }
@@ -57,7 +63,6 @@ public class Minesweeper {
     // Method to randomly place mines on the board
     private void placeMines() {
         // TODO: Implement this method
-        System.out.println();
         System.out.println();
 
         //will create a board that is 1x1 bigger than the game board that is shown
@@ -75,90 +80,52 @@ public class Minesweeper {
             }
 
         }
-
-        for(int i = 0; i < getRows();i++){
-            for(int j = 0; j < getCols(); j++){
-                System.out.print(getMines(i,j));
-                System.out.print(" ");
-            }
-            System.out.println();
-        }
-        System.out.println();
-
-        calculateNumbers();
-
     }
 
 
     // Method to calculate numbers on the board for non-mine cells
     private void calculateNumbers() {
         // TODO: Implement this method
+
         for (int rows = 0; rows < getRows(); rows++){
             for(int cols = 0; cols < getCols(); cols++){
-                    //if it's a bomb, It would like to check all around it in order to calculate those numbers
-                    //this would isolate the ones that arent near bombs and keep them at 0
                     if(getCalcNumbers(rows,cols) == 9){
-                    int mineCounter = 0;
                     for(int i =-1; i <=1 ; i++){
-                        for(int j = -1; j <= 1; j++){
-                            //will add rows, to the i(mover between left in right) + getRows, then will make sure its in bounds by doing the mod
-                            int rowCheck = (rows + i + getRows()) % getRows();
-                            //0 - 1 + 10 % 10 == 0
-                            //0 + 0 + 10 & 10 == 0
-                            //0 + 1 + 10 % 10 == 1
-                            //9 - 1 +10 == 18 % 10 == 8
-                            //9-0 + 10 == 19 & 10 == 9
-                            //9 +1 +10 == 20 & 10 == 0
-                            //can make an if statement to prevent it from going to 1 once the row reaches getRows()-1 so that it doesnt do anything to the 0 row
-                            if(i == 1 && rows == getRows()-1){
-                                break;
+                        for(int j = -1; j <= 1; j++) {
+                            if (i == 0 && j == 0)
+                                continue;
+                            int rowCheck = rows + i;
+                            int colCheck = cols + j;
+                            if (rowCheck >= 0 && rowCheck < getRows() && colCheck >= 0 && colCheck < getCols()) {
+                                if (!(getMines(rowCheck, colCheck)))
+                                    setCalcNumbers(rowCheck, colCheck, getCalcNumbers(rowCheck, colCheck) + 1);
                             }
-                            int colCheck = (cols + j + getCols()) % getCols();
-
-                            if(!(getMines(rowCheck,colCheck))){
-                                //if(rows == getRows()-1 && j == 1){
-                                //    j++;
-                                //}
-                                setCalcNumbers(rowCheck,colCheck, mineCounter++);
-                            }
-                            //setCalcNumbers(rowCheck,colCheck, mineCounter++);
                         }
-                        mineCounter = 0;
+
                     }
                  }
-
             }
         }
-
-
-        for (int rows = 0; rows < getRows(); rows++){
-            for(int cols = 0; cols < getCols(); cols++){
-
-                //I want to module the rows and cols in order to make sure that it always remains in bounds
-                System.out.print(getCalcNumbers(rows % getRows(), cols % getCols()));
-                System.out.print(" ");
-
-            }
-            System.out.println();
-        }
-
-
-
     }
 
     // Method to display the current state of the board
     public void displayBoard() {
         // TODO: Implement this method
-        //sets the whole board to false because nothing is going to be revealed at first
-        boolean showboard[][] = new boolean[getRows()][getCols()];
+        if(turnNum == 0){
+            initializeBoard();
+            placeMines();
+            calculateNumbers();
+        }
+        turnNum++;
+
         for(int i = 0; i < getRows();i++){
             for(int j = 0; j < getCols(); j++){
-                showboard[i][j] = false;
-                setRevealed(showboard);
+                System.out.print(getBoard(i,j) + " ");
             }
-
+            System.out.println();
         }
 
+        System.out.println();
     }
 
     // Method to handle a player's move (reveal a cell or place a flag)
@@ -166,23 +133,68 @@ public class Minesweeper {
     //action flag, would call for the flag to be taken off if a flag is already there
     public void playerMove(int row, int col, String action) {
         // TODO: Implement this method
+        if(!gameOver) {
+            if(getBoard(row,col) == 'f' && action.equals("reveal"))
+            {
+                System.out.println("Player must unflag before revealing");
+                System.out.println();
 
-
-
+            }
+            else if (!getRevealed(row, col) && action.equals("flag") && getBoard(row,col) != 'f') {
+                flagCell(row, col);
+                System.out.println();
+            }
+            else if ((!getRevealed(row, col) && action.equals("unflag")) && getBoard(row,col) == 'f') {
+                unflagCell(row, col);
+                System.out.println();
+            }
+            else {
+                if (getRevealed(row, col) && action.equals("reveal")){
+                    System.out.println("Choose another cell, This cell is already revealed");
+                    System.out.println();
+                         }
+                else {
+                    if(!getRevealed(row,col) && action.equals("reveal"))
+                        revealCell(row, col);
+                }
+            }
+        }
+        else
+            System.out.println("The game is over, start over to play again");
     }
-
     // Method to check if the player has won the game
     //should run after every move
     public boolean checkWin() {
+        // makesure to reveal the cell first then, check for the win
         // TODO: Implement this method
+        int totalNonBombs = (getRows() * getCols()) - numMines;
+        int tracker = 0;
+        for (int i = 0; i < getRows(); i++) {
+            for (int j = 0; j < getCols(); j++) {
+                if(getRevealed(i,j)){
+                    tracker++;
+                    if(totalNonBombs == tracker) {
+                        setGameOver(true);
+                        System.out.println("You beat MineSweeper!");
+                        return true;
+                    }
+                }
 
-        return false;
+            }
+        }
+
+            return false;
     }
 
     // Method to check if the player has lost the game
     //should run after every move
     public boolean checkLoss(int row, int col) {
         // TODO: Implement this method
+
+        if(getMines(row,col)){
+            return true;
+        }
+
         return false;
     }
 
@@ -190,18 +202,29 @@ public class Minesweeper {
     //only reveals adjacent cells if they are 0/not touching a bomb
     private void revealCell(int row, int col) {
         // TODO: Implement this method
+        setRevealed(row,col);
+        int cellreveal = getCalcNumbers(row, col);//int im trying to convert into char
+        char newcell = (char)(cellreveal +  '0');//casts the int into the character
+        setBoard(row, col, newcell);//updates the character on the reveal board
+
     }
 
     // Method to flag a cell as containing a mine
     //make the cell equal to f, in order to reference that it is a flag
     private void flagCell(int row, int col) {
         // TODO: Implement this method
+
+        setBoard(row,col, 'f');
+
     }
 
     // Method to unflag a cell
     //turns the cell from f back to *, meaning back to an unrevealed cell with nothing
     private void unflagCell(int row, int col) {
         // TODO: Implement this method
+
+        setBoard(row,col,'*');
+
     }
 
     public int getRows() {
@@ -223,6 +246,10 @@ public class Minesweeper {
 
     public void setBoard(char[][] board) {
         this.board = board;
+    }
+
+    public void setBoard(int rows, int cols, char thing) {
+        board[rows][cols] = thing;
     }
 
     public void setMines(boolean[][] mines) {
@@ -249,4 +276,14 @@ public class Minesweeper {
     public void setRevealed(boolean[][] revealed) {
         this.revealed = revealed;
     }
+    public void setRevealed(int row, int col) {
+        this.revealed[row][col] = true;
+    }
+
+    public boolean getRevealed(int row, int col) {
+        return revealed[row][col];
+    }
+
+
+
 }
